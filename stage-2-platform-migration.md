@@ -236,6 +236,7 @@ I run all of these myself before declaring Stage 2 complete:
 | No platform-specific DOM attributes ship | Grep `dist/` and `src/` for `data-(?:readdy\|webflow\|framer\|formspark\|formsubmit\|netlify)` | Empty result |
 | Type-check still passes | `npm run type-check` | Zero errors |
 | Launch blockers resolved | Read `migration-punchlist.md` | Every 🔴 ticked or explicitly accepted-with-mitigation |
+| Cross-surface naming inventory | Grep project for any name that was renamed during migration; cross-check against external surfaces (Railway env vars, PostHog event names, GSC routes, vendor product IDs) | Per Principle 2 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md) — every shared name updated lock-step in the same session, no surface left referring to the old name |
 
 I summarize the results to the user as a brief status report:
 

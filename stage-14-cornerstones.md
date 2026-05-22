@@ -324,7 +324,8 @@ When the user is ready to publish a cornerstone:
 3. **Integration session merges** `aio/articles → main`. PR optional; for small teams, fast-forward merge is fine.
 4. **Railway auto-deploys** main. The new cornerstone appears in `/blog`, `sitemap-index.xml`, and `rss.xml` automatically.
 5. **GSC re-ping**: Stage 15's `gsc_sitemap_submit.py` re-submits the sitemap; Google notices the new URL within hours.
-6. **Optional**: notify subscribers via Resend (if newsletter sequences are wired up in Stage 5).
+6. **Update the project's content-roadmap doc** (typically `docs/content-roadmap.md` or equivalent — wherever the project tracks "what's planned vs. shipped" for content). Per Principle 9 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md): don't claim a cornerstone is "published" without the canonical doc reflecting the new state. A future Claude session reading the doc cold should see "Cornerstone X is live (published YYYY-MM-DD)" and not "Cornerstone X is in draft."
+7. **Optional**: notify subscribers via Resend (if newsletter sequences are wired up in Stage 5).
 
 The whole publish flow, post-drafting, takes <10 min of the user's time and ~5 min of agent wall-clock.
 

@@ -38,6 +38,8 @@ Per-form routing decisions are confirmed with the user via Steps F1–F6 in the 
 
 **At ESP/CRM integration time, I do live research** — WebFetch the vendor's current API docs, search for `<vendor> MCP server <year>`, search for an official Node SDK — and generate the integration code based on what I find that day. I do NOT use stale, pre-baked recipes. Vendor-specific procedures evolve faster than this skill can; the research-first pattern survives.
 
+**When I do generate vendor integration code**, I follow Principle 7 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md): adopt the vendor's existing taxonomies, event names, and field naming verbatim. Don't translate the vendor's segment names to my own kebab-case scheme; don't rename event types (`subscription_started` stays as `subscription_started`, not `subscription_created`); don't paper over vendor-specific behaviors with a custom abstraction that erases their field names. Translation work compounds with every campaign/event/record afterward.
+
 **Time**: 15–30 minutes of automated work for Part A + Part B combined. Plus DNS-verification wait time (5 minutes to a few hours, runs in parallel) and any user back-and-forth on per-form routing decisions.
 
 ## Default recommendation: Resend

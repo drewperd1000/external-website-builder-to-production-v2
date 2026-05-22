@@ -264,6 +264,25 @@ Several vendors this skill integrates with have shipped MCP servers that **may n
 
 The user shouldn't need to know which vendors are in the built-in Connectors picker vs. which need Custom Connector setup — I just walk them through whichever path applies for each integration.
 
+## Operating principles Claude follows during execution
+
+Beyond the code-level invariants below, I follow **10 universal operating principles** every time I execute a v2 stage:
+
+1. Verify deploys by commit-hash, not bundle-hash or deployment-id
+2. Cross-surface naming lock-step (one rename = scan + update all consumers in one session)
+3. Never hardcode production domains; source from env vars
+4. Push after every meaningful commit
+5. Plain-language commands for users (no jargon)
+6. Surface real problems early
+7. Defer to provider taxonomies before inventing your own
+8. Wire Slack notifications for ops-relevant events
+9. Don't claim "locked in" / "deferred" without the canonical doc current
+10. Backup discipline for production sites
+
+These are extracted from observed production-deployment failure modes, not aesthetic preferences. Full rationale + where each principle is enforced lives in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md).
+
+**These principles also get scaffolded into the user's `<project>/CLAUDE.md` at [Stage 1](stage-1-scaffolding.md).** Claude Code auto-loads `CLAUDE.md` from the project directory on every future session, so every Claude session working on the user's project inherits the principles without me having to re-explain them. The user extends the file as project-specific conventions emerge.
+
 ## Technical invariants Claude follows when writing code
 
 There are now **eight** silent-failure modes Claude needs to avoid when writing the code for this skill — six from v1 plus two new for AIO:

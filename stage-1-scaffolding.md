@@ -31,6 +31,122 @@ When `aio.content_hub = true`, in addition to the baseline scaffold, I also:
 
 Stage 13 fills in the schema components, content collections, layouts, blog routes, sitemap filter, and RSS — all importing brand identity from `site-config.ts`. Stage 1 just gets Astro up and serving "hello world" so Stage 3 can wrap it.
 
+### `<project>/CLAUDE.md` — operating principles for every future Claude session on this project
+
+Before any code scaffolding, I write a starter `CLAUDE.md` at the project root containing 10 universal operating principles. Claude Code auto-loads `CLAUDE.md` from the project directory on every session start, so these principles persist across every future Claude session working on this project — without me having to re-explain them and without the user having to remember.
+
+The 10 principles in this template are the same ones documented in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md), written for brevity here so they fit cleanly in the project's rules file:
+
+```markdown
+# <Project> — Claude Operating Rules
+
+Rules every Claude session working on this project follows. Loaded
+automatically by Claude Code from this file on session start.
+
+## 1. Verify deploys by commit-hash, not bundle-hash or deployment-id
+
+Railway re-uses the deployment record in place across rebuilds.
+`latestDeployment.id` does NOT change between deploys. Only
+`latestDeployment.meta.commitHash` reliably changes. Pattern:
+capture `git rev-parse HEAD` right after pushing, then poll
+`railway status --json | jq -r '.latestDeployment.meta.commitHash'`
+and compare against expected. Never claim "deployed" based on `id`
+or `createdAt`.
+
+## 2. Cross-surface naming lock-step
+
+When a name is shared across surfaces (Railway env vars / PostHog
+event names / DB columns / GSC property / Reoon webhook URLs / Whop
+product titles / CSS class allowlists in external dashboards / etc.),
+renaming in one surface without updating all consumers in the same
+session is silent breakage. Before any rename: grep across the
+project AND inventory every external surface that references the
+name. Apply lock-step in one session.
+
+## 3. Never hardcode production domains
+
+Source from `SITE_URL` / `APP_URL` env vars (or from
+`src/site-config.ts` if this project uses the Astro path). One
+env-var change moves the site; hardcoded references would require
+code edits at every reference.
+
+## 4. Push after every meaningful commit
+
+Don't accumulate local commits that aren't on GitHub. Push protects
+against laptop-death between commit and push; also keeps Railway
+auto-deploy + scheduled tasks + cross-device sessions in sync with
+the remote.
+
+## 5. Plain-language commands for users
+
+When asking the user to take an action, frame as:
+`Open Terminal and type:` `<the literal command>`, or
+`Go to <site> → <menu> → <button>`, then `<do this>`.
+
+Show the literal copy-pasteable command with full paths. Banned
+phrasings: "OAuth flow," "interactive handshake," "session
+bootstrapping," "auth dance," "establish authentication."
+
+## 6. Surface real problems early
+
+When you hit a genuine blocker (contradiction in stated requirements,
+factual error in copy that would create legal risk, vendor behavior
+diverging from documented behavior, dependency not behaving as
+documented), tell the user immediately and offer options. Don't
+proceed with a hidden workaround that creates technical debt.
+
+Pre-existing test failures unrelated to the current task are NOT
+real problems — proceed silently.
+
+## 7. Defer to provider taxonomies before inventing your own
+
+When integrating with external providers (ad platforms, payment
+processors, CRMs, analytics tools, email senders), use the
+provider's existing taxonomies, macros, event names, and field
+naming verbatim. Don't translate provider values to a custom
+convention — the friction compounds with every campaign / event /
+record. Only invent your own convention when the provider's
+system is genuinely unavailable, opaque, or wrong for the use case.
+
+## 8. Wire Slack notifications for ops-relevant events
+
+When shipping a feature that produces ops-relevant signals (signups,
+errors, deploys, threshold crossings, async jobs completing or
+failing), evaluate whether it warrants a Slack notification and
+wire it. Don't scaffold a notification function without wiring it
+(false sense of coverage). Don't Slack high-volume routine events.
+
+## 9. Don't claim "locked in" or "deferred" without the canonical doc current
+
+If you're about to say "X is locked in" / "we can defer Y" / "future
+Claude can read <doc> for this" — the canonical project doc must
+already reflect the current state. Read it cold; if it'd surprise a
+fresh contractor, update it BEFORE making the claim. Don't fragment
+findings across many commits without consolidating into the
+canonical doc.
+
+## 10. Backup discipline
+
+Production-bound secrets (`.env`, `.secrets/`, API keys, OAuth tokens)
+live in encrypted off-machine backup. Daily scheduled tar + encrypt +
+upload to Backblaze B2 / S3 / R2. Encryption passphrase in password
+manager, NOT in the backup. Test the restore once before relying on it.
+
+## Project-specific extensions
+
+(Add your own rules below as conventions emerge. The skill leaves
+this section empty for you to fill in. Examples of what fits here:
+"always use feature flag X before deploying behavior Y," "every
+commit message starts with `feat:` / `fix:` / `chore:`," "API keys
+for vendor Z live in `.secrets/z-api-key.txt`.")
+```
+
+**Why I scaffold this in Stage 1, not later**: the principles are load-bearing for the rest of the skill execution. If Stage 4 deploys to Railway and a future Claude session re-deploys without these rules loaded, they'll likely poll on `latestDeployment.id` and silently report success while a different commit is still queuing. Establishing the rules early means every subsequent session inherits them without needing the skill loaded.
+
+**The user can edit anything in this file** — these are STARTER rules, not law. As project-specific conventions emerge (variant-naming schemes, feature-flag procedures, custom command vocabulary, etc.), they get appended under "Project-specific extensions."
+
+I do NOT overwrite a pre-existing `<project>/CLAUDE.md` if one is present. If the user has rules from a previous project they want preserved, I'll merge intelligently (append the 10 starter rules under a "Universal operating rules" section above whatever's already there, ask the user to confirm).
+
 ### `src/site-config.ts` — single source of truth for brand identity
 
 Without this file, brand constants get duplicated across `astro.config.mjs`, `BaseLayout.astro`, `BlogPostLayout.astro`, `schema-builders.ts`, `server.js`, the RSS feed, and any cornerstone that hardcodes the brand URL. A rename means find-and-replace across 8+ files with the risk of missing one. Centralizing them means one file edits + one set of env vars, then every consumer picks up the change.

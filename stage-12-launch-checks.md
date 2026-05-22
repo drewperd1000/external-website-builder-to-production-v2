@@ -81,6 +81,34 @@ Pass criteria: `richResults[]` includes the expected types (Article, FAQPage if 
 
 Note: the Rich Results Test API requires the same OAuth scopes as `gsc_sitemap_submit.py` (`webmasters.readonly` is sufficient for read-only testing). If the OAuth helper isn't configured with those scopes, I fall back to a manual prompt: "Open https://search.google.com/test/rich-results and paste the URL https://<your-domain>/blog/<cornerstone-slug>/ — report what you see back."
 
+## Pre-launch step: backup discipline check
+
+Per Principle 10 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md), production-bound secrets need encrypted off-machine backup before the site goes live. I verify with the user:
+
+```
+Before we launch, two questions on backup discipline:
+
+1. Are your secrets backed up off-machine? Loss of this laptop means
+   losing every API key, OAuth token, and .env value the site depends on.
+
+   Bare minimum: a daily scheduled task that tars .secrets/, encrypts
+   with a passphrase from your password manager, uploads to durable
+   storage (Backblaze B2 / S3 / R2). I can scaffold this for you in
+   ~10 minutes if you want — just say "set up the backup task."
+
+2. Is the restore procedure documented at docs/restore-procedure.md?
+   The goal: a future-you (or a future contractor) can follow it from
+   top to bottom without needing other context. Optimize for "stressed-out
+   2am recovery" readability.
+
+   If not, I can draft a starter from the patterns in our deployment
+   stack. You fill in the password-manager references after.
+
+Want either of these now, or defer to post-launch polish?
+```
+
+If the user defers, I add a 🟡 line to the launch report: "Backup discipline deferred to post-launch — site is live without secret recovery plan." Defer is fine for a low-stakes site; for revenue-generating production, deferring is a known risk the user has acknowledged.
+
 ## Required-values check (run at stage start)
 
 I read `<project>/.skill-config.json` per the [universal pattern in SKILL.md](SKILL.md#required-values-check-pattern-universal--runs-at-start-of-every-stage). Stage 12 doesn't introduce new required values; it verifies that everything Stages 0–11 set up is actually working in production. Specifically I cross-check:
