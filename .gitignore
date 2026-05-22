@@ -1,0 +1,43 @@
+# Skill users may clone this repo directly into ~/.claude/skills/ and start editing.
+# These patterns prevent the most common ways a user could accidentally commit
+# their own project's secrets or local artifacts back into a fork.
+
+# Secrets — NEVER commit
+.env
+.env.*
+.env.local
+.env.*.local
+.secrets/
+*-api-key.txt
+*-webhook-secret.txt
+*-public-key.txt
+
+# Per-project skill state — gitignored even if a user runs the skill from inside
+# their copy of this repo (they shouldn't, but defensively)
+.skill-config.json
+
+# Build artifacts — none should exist in this repo, but defensive
+node_modules/
+dist/
+out/
+build/
+.vite/
+.cache/
+*.tsbuildinfo
+
+# OS artifacts
+.DS_Store
+desktop.ini
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
