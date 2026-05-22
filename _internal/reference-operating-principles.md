@@ -219,7 +219,7 @@ If a NEW production failure mode surfaces during execution and warrants a princi
 
 1. Add it here with rationale + where v2 enforces it
 2. Add a shorter version to the `<project>/CLAUDE.md` template in [Stage 1](../stage-1-scaffolding.md)
-3. Add the same to any existing user projects via a one-liner: "Drew, I noticed <X>; want me to add Principle N to your project's CLAUDE.md and to v2's template?"
+3. Add the same to any existing user projects via a one-liner: "I noticed <X> would have prevented <failure>; want me to add Principle N to your project's CLAUDE.md and to v2's template?"
 4. Commit the v2 update + push
 
 The principles list is intentionally small. New entries should reflect a real failure pattern, not a hypothetical concern.
