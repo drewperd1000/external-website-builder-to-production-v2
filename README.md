@@ -8,18 +8,44 @@ A Claude Code skill that takes a website built somewhere else — Webflow, Frame
 
 ## What you get when this skill runs end-to-end
 
-Everything v1 ships, plus:
-
-- **Astro 5 stack** (replacing Vite for content-hub sites) with React islands wrapping any imported React code. Vite remains the path for non-content-hub sites via the onboarding fork.
-- **Schema component library** — 8 typed Astro components emitting valid JSON-LD: `Organization`, `WebSite`, `Person`, `Article`, `FAQPage`, `HowTo`, `Product`, `BreadcrumbList`. Reciprocal `sameAs` declarations across all your surfaces (marketing site + app + parent org) so AI assistants recognize you as one entity. Vitest validation tests included so changes don't silently break the JSON-LD.
-- **Content collections** with `tags`, `readingTime`, `draft`, `bucket` (A/B/C/D query-bucket alignment), `schemas` enum array. Native MDX support so you can write articles in plain markdown plus JSX components.
-- **Draft-preview pattern** — every draft gets a working URL for editorial review but stays out of `sitemap-index.xml`, RSS, and the `/blog` index. Flip `draft: true → false`, commit, push — sitemap regenerates, GSC re-pings automatically.
-- **RSS feed scaffold** via `@astrojs/rss`.
-- **Reoon Email Verifier integration** — every form endpoint passes through a deliverability gate. Quick mode (blocking, ~250ms, rejects `invalid` / `disposable` / `spamtrap`). Power mode (fire-and-forget, surfaces `catch_all` / `role_account` / `inbox_full` flags to Slack so you triage real-but-risky signups). 80% and 100% daily-quota Slack alerts. `/api/_admin/reoon-usage` spot-check endpoint. Fail-open posture — if Reoon is down, real signups still go through.
-- **Google Search Console sitemap automation** — `gsc_sitemap_submit.py` CLI helper authenticated via the project's `oauth_helper.py` (Google OAuth with `webmasters` scopes). Run `python gsc_sitemap_submit.py submit <site> <sitemap-url>` once at launch, schedule it for ongoing re-pings on every cornerstone publish.
-- **HTTP Basic Auth staging service** — second Railway service (`<name>-staging`) pointing at the same repo branch with `BASIC_AUTH_USER` + `BASIC_AUTH_PASS` set only on staging. The Express middleware no-ops in production. No Cloudflare DNS/Access required.
-- **Cornerstone-article workflow** — 4-cornerstone seed strategy, query-bucket alignment, 2K–4K word target, inline FAQPage + HowTo schema, internal-link discipline, draft-to-publish flip protocol, and the article-session-vs-integration-session protocol (cornerstone drafting happens in a separate `aio/articles` branch + worktree to keep MDX work out of the implementation thread).
-- **JSON-LD audit in pre-launch** — Stage 12 verifies schema component counts on every prerendered page, runs Google Rich Results Test programmatically, and surfaces any missing reciprocal `sameAs`.
+- **A Railway-deployed Astro 5 + React + Express site** at your custom domain (for content-hub sites — see the AIO bullet below for what makes this the new default). For tightly-scoped paid-traffic landers or internal admin tools without organic ambitions, the skill instead scaffolds Vite + React + Express — same Railway + analytics + email pipeline either way.
+- **HTTP Basic Auth staging service** at `<name>-staging.up.railway.app` — a second Railway service pointing at the same git branch with `BASIC_AUTH_USER` + `BASIC_AUTH_PASS` set ONLY on staging. The Express middleware no-ops in production. No Cloudflare DNS/Access work required (no managed-Access subscription either) — Railway's default URL + Basic Auth is the whole staging surface.
+- **Cloudflare MCP integration** for easily connecting the correct domain settings, etc. You can opt for using your own Domain registrar DNS service, but you'll need to do more manual work.
+- **PostHog analytics** with
+  - **same-origin *internal* reverse proxy** - this recovers **10–25% of events** that ad-blockers would otherwise drop (!!! 🤯)
+  - `loaded`-callback init pattern (no race), and build-time deploy + both global- and page-variant identifiers attached to every event. This enables A/B/n testing of every page individually in addition to global website versions.
+  - **Granular Tracking** by every CTA text, Button, etc that you want to understand the performance of
+  - **Prebuilt variant-tracking dashboards** for sequential CRO iteration with 6+ pre-built PostHog dashboards
+  - **Easy creation of additional custom dashboards in PostHog:** detailed, unlimited dashboards for measuring every metric you might be interested in (and filtering out the metrics you're not)
+  - **this altogether gives you MORE power than the $100+ Mouseflow subscription tier... for free**
+- **Microsoft Clarity** heatmaps + session replay alongside PostHog (the unlimited free-fallback for replay capacity past PostHog's free-tier cap of 5k desktop / 2.5k mobile sessions per month). Clarity offers richer UI/UX experience for visual analysis.
+- **AIO (AI-search optimization) content-hub infrastructure** so the marketing site is discoverable + citable by ChatGPT Search, Perplexity, Google AI Overview, Claude with web search, etc. — citation surface that pure-Vite sites without schema markup are leaving on the table. With:
+  - **8 schema components** emitting valid JSON-LD on every page (`Organization`, `WebSite`, `Person`, `Article`, `FAQPage`, `HowTo`, `Product`, `BreadcrumbList`), with **reciprocal `sameAs` declarations** across all your surfaces (marketing site + app + parent org) so AI assistants recognize you as one entity. Vitest tests included so future edits don't silently break the JSON-LD.
+  - **Content collections** with `tags`, `readingTime`, `draft`, `bucket` (A/B/C/D query-bucket alignment), `schemas` enum. Native MDX so you write articles in plain markdown + JSX components.
+  - **Draft-preview pattern** — every draft gets a working URL for editorial review but stays out of `sitemap-index.xml`, RSS, AND the `/blog` index. Flip `draft: true → false`, commit, push — sitemap regenerates, GSC re-pings automatically.
+  - **RSS feed + sitemap-index.xml** with draft filtering, wired via `@astrojs/sitemap` + `@astrojs/rss`. No manual maintenance.
+  - **Google Search Console sitemap automation** via the included `gsc_sitemap_submit.py` CLI helper (Google OAuth with `webmasters` scopes — one-time consent, then silent forever). One command per publish — Google re-indexes new cornerstones in hours, not days.
+- **Cornerstone-article workflow** — 4-cornerstone seed strategy (one per query bucket A/B/C/D), 2K–4K word target, inline FAQPage + HowTo schema, internal-link discipline, draft-to-publish flip protocol. Plus an **article-session-vs-integration-session protocol**: cornerstone drafting happens in a separate `aio/articles` git branch + worktree to keep MDX work out of the implementation thread (voice drift between TypeScript edits and cornerstone prose is real — separating contexts keeps each thread crisp).
+- **Resend** transactional email behind a swappable transport abstraction (welcome emails, contact-form notifications, autoresponders) with DKIM/SPF wired, **gated by Reoon Email Verifier** so disposable / spamtrap / invalid emails never poison your sender reputation. ('Swappable' means you can easily plug-in your own preferred ESP... easy ESPeasy).
+- **Reoon Email Verifier deliverability gate** on every form endpoint, with
+  - **Quick mode (blocking, ~250ms)** rejecting `invalid` / `disposable` / `spamtrap` at submission time — disposable Mailinator/guerrillamail addresses never enter your ESP list (one disposable signup can poison Resend reputation for every real subscriber for weeks)
+  - **Power mode (fire-and-forget async)** surfacing `catch_all` / `role_account` / `inbox_full` to Slack so you triage real-but-risky signups after the fact
+  - **80% and 100% daily-quota Slack alerts** so you know when to bump your AppSumo Lifetime Deal tier (Reoon's AppSumo LTD = ~$59 one-time per tier, stackable; Tier 2 = 1,200 verifications/day forever — as of this writing)
+  - **`/api/_admin/reoon-usage` spot-check endpoint** for at-a-glance "how much budget do I have left today"
+  - **Fail-open posture** — if Reoon is down, real signups still go through (the deliverability gate must never be the thing that creates an outage)
+- **A geo-aware cookie consent banner** that adapts to your privacy posture (strict / standard / light) with three-layer Clarity content masking. Allows you to geo-fence to only show banners to GDPR locales, to GDPR+California, etc. You choose your risk-comfort level. This is highly contingent on your marketing niche.
+- **Optional: payments** via Stripe (default)
+- **Optional: memberships** via Whop (our default recommendation for content/community/course businesses) with HMAC-verified webhooks forwarding subscription events server-side to PostHog. You can swap in Skool / Lemonsqueezy / Paddle / Gumroad, etc.
+- **Optional: affiliate program tools and tracking** with
+  - multi-layer attribution surviving cookie deletion, Safari ITP, AND ad-platform username changes.
+  - Automated short-URL creation for affiliates via Switchy.io API ($39 LTD via Appsumo with very easy set-up, as of this writing)
+  - The native integration here is with Whop's affiliate program, but the tools we've created work with any affiliate program that provides API or webhook access. 
+- **A pre-launch checklist** that catches the otherwise silent-failures before paid traffic hits the site — now including, for the AIO path:
+  - **JSON-LD schema validation** on every prerendered page (valid syntax, `Organization` present, `BreadcrumbList` present on blog posts, no `aggregateRating`/`review` on `Product` — that's a $1M-scale FTC trap if you don't have real reviews)
+  - **GSC sitemap reachability + zero-errors check** (sitemap submitted, returns 200, excludes drafts, includes every published cornerstone)
+  - **Cornerstone readiness audit** — every published cornerstone has Article + at least one of {FAQPage, HowTo}, AuthorBio rendered, ≥2 internal links to other cornerstones
+  - **Google Rich Results Test** run programmatically on every cornerstone URL
+- **`src/site-config.ts` single source of truth** for brand identity (SITE_URL, BRAND, AUTHOR_NAME, parent org, sameAs URLs) — imported by every schema builder, layout, RSS feed, blog route. A brand rename = one file edit + Railway env vars, not 8 files in find-and-replace.
 
 The skill ships **16 stages** (0 through 15), each with a "Last verified" date and re-research instructions for when vendor APIs evolve.
 
