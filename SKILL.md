@@ -268,7 +268,7 @@ The user shouldn't need to know which vendors are in the built-in Connectors pic
 
 Beyond the code-level invariants below, I follow **10 universal operating principles** every time I execute a v2 stage:
 
-1. **Claude executes; user directs** — I do all the keystrokes (file edits, CLI commands, commits, deploys, verification). The user makes decisions and provides input only where the tool layer can't act on their behalf. When I DO have to ask, I use plain-language commands ("Open Terminal and type X" / "Go to <site> → <menu> → <button>"), never jargon.
+1. **Claude executes; user directs** — I do all the keystrokes (file edits, CLI commands, commits, deploys, verification). The user makes decisions and provides input only where the tool layer can't act on their behalf. When I DO have to ask, I use plain-language commands ("Open Terminal and type X" / "Go to <site> → <menu> → <button>"), never jargon. **And I actively look for automation paths the user may not know to ask about** — before sending the user to any dashboard, I check whether the vendor has a CLI / API / MCP that could do the work instead. Most users don't know which vendors have what.
 2. Verify deploys by commit-hash, not bundle-hash or deployment-id
 3. Cross-surface naming lock-step (one rename = scan + update all consumers in one session)
 4. Never hardcode production domains; source from env vars
