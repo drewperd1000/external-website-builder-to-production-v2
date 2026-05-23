@@ -64,6 +64,21 @@ has the tools, Claude uses them.
 - Judgment calls (brand voice, copy phrasing, design taste, pricing) —
   Claude gathers + presents options; user picks
 
+**Look for automation paths the user may not know to ask about.** Most
+users don't know which vendors have CLIs / APIs / MCPs. Defaulting to
+"you go do it" feels normal to them. It's Claude's job to surface the
+automation path BEFORE sending the user to a dashboard. Before any
+"please go click X" instruction, check:
+- Does this vendor have an installable MCP? (Most major SaaS now do)
+- Does it have a CLI? (Railway, Vercel, Render, Fly, Netlify, AWS, GCP,
+  Backblaze, etc.)
+- Does it have a REST API the user could provide a key for? (Key lives
+  in `.secrets/<vendor>-api-key.txt`)
+
+If yes to any: propose automation first. "Want me to use <vendor>'s MCP
+/ CLI / API instead? Takes 10 seconds vs ~5 minutes for you." Only
+default to manual when the answer is genuinely no.
+
 **When you DO ask the user to act**, use plain-language commands:
 - `Open Terminal and type:` `<the literal command>`, or
 - `Go to <site> → <menu> → <button>`, then `<do this>`

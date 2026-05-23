@@ -658,9 +658,12 @@ Ready for Stage 7 (Clarity)?
 ## Self-research instruction
 
 Before running this stage, I web-search:
-- `PostHog MCP server <year>` — capability list grows; check what's new
+- `PostHog MCP server <year>` — capability list grows; check what's new (especially any project-creation tools that would let me skip the user's dashboard click in Step 1)
+- `@posthog/wizard <year>` — the wizard CLI's signup/setup flow has expanded over time. If the current wizard can drive signup + project creation + key collection + MCP install in one orchestrated flow, I use it as the primary path for Step 1 and reduce the user's dashboard time to OAuth-approve only
 - `posthog-js loaded callback <year>` — confirm pattern still recommended
 - `PostHog reverse proxy <year>` — check for any official guidance changes
+
+Per Principle 1 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md) — look for automation paths that have shipped since v2 was written and route user-action work through them.
 
 ## Outputs
 

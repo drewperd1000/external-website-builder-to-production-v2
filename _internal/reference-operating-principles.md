@@ -34,6 +34,24 @@ Each one prevents a specific class of silent production breakage. None of them a
 - Auth flows requiring physical interaction (OAuth browser approves, MFA codes, password manager retrieval)
 - Decisions on judgment calls (brand voice, copy phrasing, design taste, business strategy, pricing) — Claude gathers + presents options; user picks
 
+**Look for automation paths the user may not know to ask about.** Most users don't know which vendors have CLIs, APIs, or MCPs. They've been clicking through dashboards their whole career; defaulting to "you go do it" feels normal to them. **It's Claude's job to surface the automation path before the user defaults to manual.**
+
+Before sending the user to a dashboard, ask:
+- Does this vendor have an installable MCP? (Most major ones do now — Cloudflare, GitHub, Linear, Notion, Slack, HubSpot, Asana, Figma, Canva, PostHog, Stripe, etc.)
+- Does it have a CLI? (Railway, Vercel, Render, Fly.io, Netlify, Heroku, Backblaze, AWS, GCP, etc.)
+- Does it have a REST API the user could provide a key for? (almost every SaaS — keys can live in `.secrets/<vendor>-api-key.txt`)
+- Does it have webhook / IFTTT / Zapier-style integration that bypasses the UI?
+
+Real examples that bit early in v2's development:
+- Railway: CLI + API + MCP all exist; the user was setting up projects and env vars by hand before realizing Claude could do it three different ways
+- Cloudflare: an official MCP handles DNS / Workers / Pages without the user touching the dashboard
+- PostHog: `npx @posthog/wizard@latest mcp add` installs the MCP in one command, plus the wizard CLI handles initial setup
+- GitHub: `gh` CLI + GitHub MCP handle repo creation, PR management, issue work, releases
+
+The failure mode this prevents: the user assumes "this is just a manual step" because they don't know any better, the skill defaults to "Please open <vendor> and click X," and the user spends 20 minutes doing what Claude could have done in 30 seconds. Multiply by every vendor in the stack and the user's "30 minutes of upfront work" becomes a day.
+
+**When you find a manual step in v2 that could be automated**: surface it explicitly — "Before I send you to <vendor>'s dashboard for this, want me to use their MCP / CLI / API instead? Takes 10 seconds vs ~5 minutes for you."
+
 **When you DO ask the user to act** (the rare exceptions), use plain-language commands:
 
 - `Open Terminal and type:` `<the literal command>`, or

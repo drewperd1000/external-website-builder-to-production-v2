@@ -1,8 +1,17 @@
 # Stage 9: Membership Platform (Conditional)
 
-**Last verified: 2026-05-08.**
+**Last verified: 2026-05-21.** Re-search `Whop API <year>` / `Stripe API <year>` / `<platform> MCP server <year>` before this stage if older than 60 days — vendor product-creation APIs evolve and the more of the dashboard work I can move to API, the less manual clicking the user does.
 
-> **🤖 Re-grounding (re-read at start of stage)**: I (Claude) write the webhook handler, the signature verification, the plan-cache table migration, the server-side PostHog forwarding, and Railway env-var setup. The user's actions: (1) sign up at the chosen membership platform and configure products/plans (~30 min in dashboard), (2) generate API keys + webhook signing secret and paste them into project-local secrets files. Everything else autonomous.
+> **🤖 Re-grounding (re-read at start of stage)**: I (Claude) write the webhook handler, the signature verification, the plan-cache table migration, the server-side PostHog forwarding, the Railway env-var setup, AND — where the platform's API supports it — the product + plan + webhook-endpoint creation. The user's actions narrow to: (1) sign up at the membership platform (~5 min), (2) generate the API key in the dashboard (~30 sec — the one click no API can replace), (3) paste the key back. Everything else autonomous via the platform's REST API.
+
+## Self-research instruction
+
+Before this stage, I web-search:
+- `<membership-platform> MCP server <year>` — capability expansion (especially for product/plan management)
+- `<membership-platform> API reference product create <year>` — confirm product + plan creation endpoints still exist with the shape I'll use
+- `<membership-platform> webhooks API <year>` — confirm webhook-endpoint creation is API-able (most platforms support `POST /webhooks` programmatically)
+
+If the platform has shipped new automation surface since v2 was written, I route the user-action work through it. The goal is to shrink user dashboard time to the minimum (account creation + API key generation). Per Principle 1 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md) — look for automation paths the user may not know to ask about.
 
 ## Required-values check (run at stage start)
 
@@ -42,58 +51,124 @@ The implementation below shows two parallel paths in detail: **Stripe** (default
 
 ## My execution sequence (default: Stripe; Whop path follows)
 
-### Step 1: User sets up Whop account + products
+### Step 1: User creates Whop company (account-level only, ~5 min)
 
-This is the longest user-action step. I tell them:
-
-```
-Whop account setup — about 30 minutes if starting fresh:
-
-  1. https://whop.com — create company (or sign in if you have one)
-  2. Add your products (one per tier you sell — Plus, Pro, Lifetime,
-     etc.) with prices
-  3. Each product can have multiple plans (monthly / annual / lifetime).
-     Note the plan IDs — they're load-bearing for the marketing site CTAs
-     in Stage 10.
-  4. After setup, find your business ID (it looks like `biz_xxxxxx`).
-     Share it with me — I'll save it to .skill-config.json.
-
-Whop checkout URL formats (I'll use the first by default):
-  - Direct checkout: https://whop.com/checkout/<plan_id>?a=<affiliate_handle>
-  - Store page:      https://whop.com/<your-company-slug>/<product-slug>/
-                     ?directPlanId=<plan_id>&a=<affiliate_handle>
-
-Tell me when you've added all products + plans. I'll need:
-  • Your business ID
-  • The plan IDs for each tier (I'll capture them via Whop's API once
-    you give me an API key in Step 2)
-```
-
-### Step 2: User generates Whop API key + webhook secret
+I tell the user ONLY the account-creation part — products + plans + webhooks get created via API in Step 2c, so the user doesn't click through any of that:
 
 ```
-Two more dashboard items, takes about 5 minutes:
+Whop account setup — about 5 minutes:
+
+  1. Open https://whop.com — create company (or sign in if you have one)
+  2. Complete the basic company profile (name, logo, billing setup)
+  3. Find your business ID (it looks like `biz_xxxxxx`) — top of any
+     company-level page in the dashboard. Share it with me; I'll save
+     to .skill-config.json.
+
+That's all the dashboard work for company setup.
+
+Next (Step 2) you'll generate an API key with a single click. After
+that paste, I create all your products, plans, and the webhook
+endpoint via Whop's REST API. No more manual product/plan clicking.
+```
+
+### Step 2: User generates Whop API key (one click + paste, ~30 sec)
+
+```
+One dashboard action:
 
   1. Whop dashboard → Developer → API Keys → "Create"
-  2. Save: paste the key here, I'll store at .secrets/whop-api-key.txt
+  2. Copy the key (starts with "apik_")
+  3. Paste it here; I'll save to .secrets/whop-api-key.txt
 
-  3. Whop dashboard → Developer → Webhooks → "Create endpoint"
-  4. URL: https://app.<your-domain>/api/webhooks/whop
-     (or https://<your-domain>/api/webhooks/whop if no app subdomain)
-  5. Subscribe to these events:
-     - payment.succeeded (initial purchases + renewals)
-     - payment.failed
-     - membership.activated
-     - membership.deactivated
-     - membership.cancel_at_period_end_changed
-     - refund.created / refund.updated
-     - dispute.created / dispute.updated
-     - invoice.past_due
-  6. Save the webhook signing secret (starts with "whsec_")
-  7. Paste it here, I'll store at .secrets/whop-webhook-secret.txt
+That's the last dashboard task. After this paste, I create products,
+plans, the webhook endpoint, and event subscriptions via Whop's REST
+API — no more dashboard clicking.
 ```
 
-When the user pastes both secrets, I save them to project-local `.secrets/` files and proceed.
+When the user pastes the key, I save it to `<project>/.secrets/whop-api-key.txt` and proceed to Step 2c.
+
+### Step 2c: I create products + plans + webhook endpoint via Whop API
+
+Now that I have the API key, I drive the remaining setup via REST API. The user's tier list (from onboarding's `membership.tiers[]`) tells me what to create.
+
+**For each tier in `membership.tiers[]`**, I create a product + the matching plans:
+
+```bash
+# Create the product
+curl -X POST "https://api.whop.com/api/v1/products" \
+  -H "Authorization: Bearer $(cat .secrets/whop-api-key.txt)" \
+  -H "Content-Type: application/json" \
+  --data '{
+    "company_id": "<biz_xxxxxx>",
+    "name": "<tier.name>",
+    "description": "<tier.description>",
+    "visibility": "visible"
+  }'
+# Response: { "id": "prod_xxx", ... }
+
+# Create each plan for that product (monthly / annual / lifetime per tier's interval[])
+curl -X POST "https://api.whop.com/api/v1/plans" \
+  -H "Authorization: Bearer $(cat .secrets/whop-api-key.txt)" \
+  -H "Content-Type: application/json" \
+  --data '{
+    "product_id": "prod_xxx",
+    "plan_type": "renewal",
+    "billing_period": "<monthly|annual|one_time>",
+    "renewal_price": <price_cents>,
+    "initial_price": 0
+  }'
+# Response: { "id": "plan_xxx", ... }
+```
+
+**Critical Whop gotcha**: on a renewal plan, `initial_price` is an ADDITIONAL one-time setup fee charged on top of `renewal_price`, NOT the first charge replacing it. Setting both equal double-charges day-1. For a standard subscription: `initial_price: 0` + `renewal_price: $X`. For one-time/lifetime: `initial_price: $X` + `renewal_price: 0` + `plan_type: "one_time"`. I verify each plan I create matches the user's intent before moving on.
+
+**Then I create the webhook endpoint**:
+
+```bash
+curl -X POST "https://api.whop.com/api/v1/webhooks" \
+  -H "Authorization: Bearer $(cat .secrets/whop-api-key.txt)" \
+  -H "Content-Type: application/json" \
+  --data '{
+    "url": "https://app.<your-domain>/api/webhooks/whop",
+    "events": [
+      "payment.succeeded",
+      "payment.failed",
+      "membership.activated",
+      "membership.deactivated",
+      "membership.cancel_at_period_end_changed",
+      "refund.created",
+      "refund.updated",
+      "dispute.created",
+      "dispute.updated",
+      "invoice.past_due"
+    ]
+  }'
+# Response: { "id": "wh_xxx", "signing_secret": "whsec_xxxxx", ... }
+```
+
+I save the returned `signing_secret` to `<project>/.secrets/whop-webhook-secret.txt`. The user never opens the Webhooks dashboard.
+
+**Capture all plan IDs** to `.skill-config.json` under `membership.plan_ids` — Stage 10's affiliate-link builder needs them:
+
+```json
+{
+  "membership": {
+    "plan_ids": {
+      "plus_monthly":  "plan_xxxxxxxxxxxxx",
+      "plus_annual":   "plan_xxxxxxxxxxxxx",
+      "pro_monthly":   "plan_xxxxxxxxxxxxx",
+      "pro_annual":    "plan_xxxxxxxxxxxxx",
+      "lifetime":      "plan_xxxxxxxxxxxxx"
+    }
+  }
+}
+```
+
+**Verification**: I call `GET /api/v1/products?company_id=<biz_xxxxxx>` to confirm all products are visible + correctly priced. I also call `GET /api/v1/webhooks` to confirm the webhook endpoint is registered with the right event subscriptions. If anything's wrong, I delete + recreate via API rather than asking the user to fix in the dashboard.
+
+**Time savings**: ~25 min of user dashboard clicking → 0. Per Principle 1 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md) — automation paths the user may not have known to ask about.
+
+**Fallback if Whop API rejects something**: I surface the specific error (per Principle 6 — surface real problems early). I do NOT silently fall back to "please go click through the dashboard" — that defeats the point. If Whop's API permission scope doesn't include `products:write` or `webhooks:write`, the fix is to ask the user to regenerate the API key with broader scope, not to do the work manually.
 
 ### Step 2b (optional): I install Whop's MCP if available
 

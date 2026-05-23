@@ -519,9 +519,11 @@ Ready for Stage 8 (privacy + consent banner)?
 ## Self-research instruction
 
 Before running this stage, I web-search:
-- `Clarity MCP server <year>` — capability list expansion
-- `Clarity API documentation <year>` — new endpoints
+- `Clarity MCP server <year>` — capability list expansion (especially any project-creation tools that would let me skip the user's dashboard click in Step 1)
+- `Clarity API documentation <year>` — new endpoints (project provisioning? masking config push? — anything that lets me do dashboard work via API)
 - `Clarity privacy controls <year>` — masking model changes
+
+Per Principle 1 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md) — look for automation paths that have shipped since v2 was written and route user-action work through them. The Step 1 user signup is genuinely one-time identity work, but the project creation + project-ID copy could move to API if Clarity has shipped that surface.
 
 ## Outputs
 
