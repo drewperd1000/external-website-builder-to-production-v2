@@ -61,7 +61,7 @@ to the world," not between code branches.
 
 ## Deploy verification using commitHash (not id)
 
-Railway re-uses the deployment record in place across rebuilds — `id` and `createdAt` do NOT change between deploys. Only `meta.commitHash` reliably changes. This is Principle 1 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md); the full gotcha detail and the underlying GraphQL response shape live in [`_internal/reference-railway-automation.md`](_internal/reference-railway-automation.md). The correct polling pattern:
+Railway re-uses the deployment record in place across rebuilds — `id` and `createdAt` do NOT change between deploys. Only `meta.commitHash` reliably changes. This is Principle 2 in [`_internal/reference-operating-principles.md`](_internal/reference-operating-principles.md); the full gotcha detail and the underlying GraphQL response shape live in [`_internal/reference-railway-automation.md`](_internal/reference-railway-automation.md). The correct polling pattern:
 
 ```bash
 # After git push:

@@ -43,7 +43,37 @@ The 10 principles in this template are the same ones documented in [`_internal/r
 Rules every Claude session working on this project follows. Loaded
 automatically by Claude Code from this file on session start.
 
-## 1. Verify deploys by commit-hash, not bundle-hash or deployment-id
+## 1. Claude executes; user directs
+
+Default operating mode: Claude does ALL the keystrokes — edits files,
+runs CLI commands, pushes commits, verifies results, reports concrete
+evidence. The user provides decisions (what to build, what voice, what
+tradeoffs) and a small number of inputs where the tool layer can't act
+on their behalf.
+
+**Anti-pattern this rejects**: handing the user a list of steps to run
+themselves. "First, run `npm install`, then edit `foo.json`, then
+redeploy" is wrong when Claude has the tools to do all three. If Claude
+has the tools, Claude uses them.
+
+**Rare exceptions** (user MUST act because the tool layer can't):
+- Dashboard-only ops the MCP doesn't expose (vendor-specific UI without
+  an API: Cloudflare Email Routing, DocuSign, etc.)
+- Auth flows requiring physical interaction (OAuth browser approves, MFA
+  codes, password manager retrieval)
+- Judgment calls (brand voice, copy phrasing, design taste, pricing) —
+  Claude gathers + presents options; user picks
+
+**When you DO ask the user to act**, use plain-language commands:
+- `Open Terminal and type:` `<the literal command>`, or
+- `Go to <site> → <menu> → <button>`, then `<do this>`
+
+Show the literal copy-pasteable command with full paths. Tell them
+what they'll see. Banned phrasings: "OAuth flow," "interactive
+handshake," "session bootstrapping," "auth dance," "establish
+authentication."
+
+## 2. Verify deploys by commit-hash, not bundle-hash or deployment-id
 
 Railway re-uses the deployment record in place across rebuilds.
 `latestDeployment.id` does NOT change between deploys. Only
@@ -53,7 +83,7 @@ capture `git rev-parse HEAD` right after pushing, then poll
 and compare against expected. Never claim "deployed" based on `id`
 or `createdAt`.
 
-## 2. Cross-surface naming lock-step
+## 3. Cross-surface naming lock-step
 
 When a name is shared across surfaces (Railway env vars / PostHog
 event names / DB columns / GSC property / Reoon webhook URLs / Whop
@@ -63,29 +93,19 @@ session is silent breakage. Before any rename: grep across the
 project AND inventory every external surface that references the
 name. Apply lock-step in one session.
 
-## 3. Never hardcode production domains
+## 4. Never hardcode production domains
 
 Source from `SITE_URL` / `APP_URL` env vars (or from
 `src/site-config.ts` if this project uses the Astro path). One
 env-var change moves the site; hardcoded references would require
 code edits at every reference.
 
-## 4. Push after every meaningful commit
+## 5. Push after every meaningful commit
 
 Don't accumulate local commits that aren't on GitHub. Push protects
 against laptop-death between commit and push; also keeps Railway
 auto-deploy + scheduled tasks + cross-device sessions in sync with
 the remote.
-
-## 5. Plain-language commands for users
-
-When asking the user to take an action, frame as:
-`Open Terminal and type:` `<the literal command>`, or
-`Go to <site> → <menu> → <button>`, then `<do this>`.
-
-Show the literal copy-pasteable command with full paths. Banned
-phrasings: "OAuth flow," "interactive handshake," "session
-bootstrapping," "auth dance," "establish authentication."
 
 ## 6. Surface real problems early
 

@@ -16,7 +16,40 @@ Each one prevents a specific class of silent production breakage. None of them a
 
 ## The 10 principles
 
-### 1. Verify deploys by commit-hash, not bundle-hash or deployment-id
+### 1. Claude executes; user directs
+
+**Default operating mode**: Claude does ALL the keystrokes — edits files via Edit/Write, runs CLI commands via Bash, pushes commits via git, verifies results via curl / build / test, reports concrete evidence. The user provides decisions (what to build, what voice, what tradeoffs) and a small number of inputs where the tool layer can't act on their behalf.
+
+**The anti-pattern this rejects**: handing the user a list of steps to run themselves. "First, run `npm install`, then edit `foo.json` to add X, then redeploy" is wrong when Claude has the tools to do all three. If Claude has the tools, Claude uses them.
+
+**Cases this principle covers**:
+- File edits on code or config — Claude makes them; user reviews after
+- CLI scripts (`npm`, build, deploy, git, etc.) — Claude runs via Bash; user doesn't open a terminal
+- Triggering Railway redeploys — Claude pushes a commit; Claude verifies the new bundle via curl + commit-hash check (Principle 2)
+- Variant changes / feature flag toggles — Claude reads the JSON, computes the change, commits, pushes
+- Server restarts during development — Claude restarts via Preview MCP or equivalent; doesn't ask
+
+**Rare exceptions** (cases where the user MUST act because the tool layer can't):
+- Dashboard-only operations the MCP doesn't expose (vendor-specific UI without API: Cloudflare Email Routing setup, PostHog DPA signing in a browser, DocuSign, etc.)
+- Auth flows requiring physical interaction (OAuth browser approves, MFA codes, password manager retrieval)
+- Decisions on judgment calls (brand voice, copy phrasing, design taste, business strategy, pricing) — Claude gathers + presents options; user picks
+
+**When you DO ask the user to act** (the rare exceptions), use plain-language commands:
+
+- `Open Terminal and type:` `<the literal command>`, or
+- `Go to <site> → <menu> → <button>`, then `<do this>`
+
+Show the literal copy-pasteable command with full paths. Tell them what they'll see and what to do next. **Banned phrasings**: "OAuth flow," "interactive handshake," "session bootstrapping," "auth dance," "establish authentication," "initiate the flow."
+
+| ✗ Avoid | ✓ Use |
+|---|---|
+| "Run the interactive browser flow for `railway login`" | "Open Terminal and type `railway login`. Browser opens — click Authorize." |
+| "Initiate the OAuth handshake for Google Workspace" | "Open Terminal and type `python <path>/oauth_helper.py`. Follow the prompts in your browser." |
+| "Establish the Cloudflare DNS API token authentication" | "Go to Cloudflare dashboard → My Profile → API Tokens → Create Token. Pick the 'Edit zone DNS' template. Copy the token. Paste it here." |
+
+**Where v2 enforces this**: SKILL.md "Automation contract" section (canonical statement of who-does-what for every category); the "Common rationalizations to refuse" table; every stage's voice contract.
+
+### 2. Verify deploys by commit-hash, not bundle-hash or deployment-id
 
 Railway re-uses the deployment record in place across rebuilds. `latestDeployment.id` and `latestDeployment.createdAt` do NOT change between deploys. Only `latestDeployment.meta.commitHash` reliably changes. Polling on `id` will see "no change" forever even when deploys complete.
 
@@ -41,7 +74,7 @@ done
 
 **Where v2 enforces this**: [`_internal/reference-railway-automation.md`](reference-railway-automation.md) (canonical pattern), [Stage 4](../stage-4-railway.md) (deploy verification).
 
-### 2. Cross-surface naming lock-step
+### 3. Cross-surface naming lock-step
 
 When a name is shared across more than one surface, renaming in one place without updating all consumers in the same session is silent breakage. "Surfaces" includes: multiple repos, Railway env vars, PostHog event names, DB column names, GSC property identifiers, Reoon webhook URLs, external dashboard allowlists, vendor product/plan IDs, CSS class names referenced by external tools.
 
@@ -59,7 +92,7 @@ Before any rename: grep across the project AND inventory every external surface 
 
 **Where v2 enforces this**: [Stage 0](../stage-0-discovery.md) (initial surface inventory), [Stage 2](../stage-2-platform-migration.md) (verification grep for residual platform refs), [Stage 12](../stage-12-launch-checks.md) (pre-launch sitemap-vs-routes cross-check).
 
-### 3. Never hardcode production domains
+### 4. Never hardcode production domains
 
 Source from `SITE_URL` / `APP_URL` env vars (or from `src/site-config.ts` if using v2's Astro path). One env-var change moves the site; hardcoded references would require code edits at every reference.
 
@@ -79,7 +112,7 @@ import { APP_URL } from "@/site-config";
 
 **Where v2 enforces this**: [Stage 1](../stage-1-scaffolding.md) (`src/site-config.ts` scaffold), [Stage 2 Step 8](../stage-2-platform-migration.md) (refactor hardcoded production domains), [Stage 13](../stage-13-content-hub.md) (schema components import from site-config).
 
-### 4. Push after every meaningful commit
+### 5. Push after every meaningful commit
 
 Don't accumulate local commits that aren't on GitHub. Pushing protects against:
 - Laptop death between commit and push
@@ -90,29 +123,6 @@ Don't accumulate local commits that aren't on GitHub. Pushing protects against:
 The discipline is simple: every `git commit` that produces a meaningful change is followed by `git push` in the same turn.
 
 **Where v2 enforces this**: every stage's Outputs section ends with "commit + push."
-
-### 5. Plain-language commands for users (no jargon)
-
-When asking the user to take an action, frame as:
-
-- `Open Terminal and type:` `<the literal command>`, or
-- `Go to <site> → <menu> → <button>`, then `<do this>`
-
-Then describe what they'll see and what to do next.
-
-**Banned phrasings**: "OAuth flow," "interactive handshake," "session bootstrapping," "auth dance," "establish authentication," "initiate the flow," "trigger the authentication cycle."
-
-| ✗ Avoid | ✓ Use |
-|---|---|
-| "Run the interactive browser flow for `railway login`" | "Open Terminal and type `railway login`. Browser opens — click Authorize." |
-| "Initiate the OAuth handshake for Google Workspace" | "Open Terminal and type `python <path>/oauth_helper.py`. Follow the prompts in your browser." |
-| "Establish the Cloudflare DNS API token authentication" | "Go to Cloudflare dashboard → My Profile → API Tokens → Create Token. Pick the 'Edit zone DNS' template. Copy the token. Paste it here." |
-
-Show the literal exact command the user can copy-paste, with full paths (no `~` substitutions, no placeholder substitutions they have to figure out). If the result is async, tell them what to look for as confirmation. If something might go wrong, give a one-line fallback.
-
-**Trigger**: any time you're about to write one of the banned phrasings — stop and rewrite as literal command + what the user sees.
-
-**Where v2 enforces this**: SKILL.md voice contract, every stage's user-facing prompts.
 
 ### 6. Surface real problems early
 

@@ -268,11 +268,11 @@ The user shouldn't need to know which vendors are in the built-in Connectors pic
 
 Beyond the code-level invariants below, I follow **10 universal operating principles** every time I execute a v2 stage:
 
-1. Verify deploys by commit-hash, not bundle-hash or deployment-id
-2. Cross-surface naming lock-step (one rename = scan + update all consumers in one session)
-3. Never hardcode production domains; source from env vars
-4. Push after every meaningful commit
-5. Plain-language commands for users (no jargon)
+1. **Claude executes; user directs** — I do all the keystrokes (file edits, CLI commands, commits, deploys, verification). The user makes decisions and provides input only where the tool layer can't act on their behalf. When I DO have to ask, I use plain-language commands ("Open Terminal and type X" / "Go to <site> → <menu> → <button>"), never jargon.
+2. Verify deploys by commit-hash, not bundle-hash or deployment-id
+3. Cross-surface naming lock-step (one rename = scan + update all consumers in one session)
+4. Never hardcode production domains; source from env vars
+5. Push after every meaningful commit
 6. Surface real problems early
 7. Defer to provider taxonomies before inventing your own
 8. Wire Slack notifications for ops-relevant events
